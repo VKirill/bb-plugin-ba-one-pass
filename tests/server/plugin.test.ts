@@ -62,6 +62,9 @@ describe("plugin", () => {
     expect(config.tools.map((t) => t.name).sort()).toEqual([...TOOL_NAMES].sort());
     expect(config.skills.sort()).toEqual(skillsForStage("elicit").sort());
     expect(config.instructions).toContain("Оплата подписки");
+    // The instructions name the stage's method skills, so the agent opens them.
+    expect(config.instructions).toContain("ba-elicitation-prep");
+    expect(config.instructions).toContain("ba-approve");
     const other = await harness.behavior.resolveAgentConfiguration(makePluginAgentConfigurationContext());
     expect(other.tools).toEqual([]);
     expect(other.skills).toEqual([]);

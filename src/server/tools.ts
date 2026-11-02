@@ -31,6 +31,7 @@ import {
 } from "./analysis";
 import { clip, CONTEXT_SECTIONS, itemLine, renderContext } from "./render";
 import { StoreError, type Store } from "./store";
+import { LIFECYCLE_SKILLS, STAGES } from "../shared/stages";
 
 export const TOOL_NAMES = [
   "ba_context",
@@ -466,6 +467,17 @@ export function sessionTitle(projectName: string, stage: StageId, language = "en
   return `BA · ${projectName} · ${titles[stage]}`;
 }
 
+/** Names the stage's method skills so the agent opens them, not only ba-core. */
+function stageSkillsLine(stage: StageId): string {
+  const own = STAGES[stage].skills;
+  const parts = [
+    own.length > 0 ? `Stage skills: ${own.join(", ")}.` : "",
+    `Life cycle skills (any stage): ${LIFECYCLE_SKILLS.join(", ")}.`,
+    "Before each BABOK task (planning, an interview, current or future state, specifying, verifying, prioritising, approving…) load the skill for that task with the Skill tool and follow its steps; ba-core alone is not the method.",
+  ];
+  return parts.filter((part) => part !== "").join(" ");
+}
+
 /** Lines the configure callback adds for every BA session. */
 export function sessionInstructions(session: Session, projectName: string, brief: string): string {
   return [
@@ -473,6 +485,7 @@ export function sessionInstructions(session: Session, projectName: string, brief
     `BA project: ${JSON.stringify(projectName)} (id ${JSON.stringify(session.projectId)}). Session stage: ${session.stage}.`,
     brief,
     "Start with ba_context. Keep every register record in the ba_* tools, never as loose files. Follow the ba-core skill and the stage skills.",
+    stageSkillsLine(session.stage),
     "Documents and register text go in the project language shown by ba_context.",
   ].join("\n");
 }
