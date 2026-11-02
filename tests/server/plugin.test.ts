@@ -1,4 +1,4 @@
-import { readdirSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { createFakePluginHost, makePluginAgentConfigurationContext } from "@get-bb/plugin-sdk/testing";
 import { describe, expect, it } from "vitest";
 import plugin from "../../server";
@@ -11,11 +11,18 @@ const text = (result: unknown): string => {
   return (r.content ?? []).map((c) => c.text ?? "").join("\n");
 };
 
+// The icons the manifest declares, as BB would read them.
+const manifest = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8")) as {
+  bb: { branding: { experimental_icons: Record<string, string> } };
+};
+const declaredIcons = Object.keys(manifest.bb.branding.experimental_icons);
+
 async function setup() {
   let spawned = 0;
   const { bb, harness } = createFakePluginHost({
     pluginId: "ba-one-pass",
     agentSkillIds: ALL_SKILLS,
+    experimental_declaredIconNames: declaredIcons,
     sdk: {
       threads: {
         spawn: async () => ({ id: `thr_${++spawned}` }) as never,
