@@ -129,6 +129,8 @@ export function registerRpc(bb: BbPluginApi, store: Store, changed: (projectId: 
         environment: { type: "project-default" },
         prompt: kickoffPrompt(project, stage, goal),
         title,
+        // BA sessions live in the plugin's own sidebar, not in the BB project tree.
+        visibility: "hidden",
         pluginMetadata: { projectId: project.id, stage },
       });
       const session = store.addSession({ threadId: thread.id, projectId, stage, title });

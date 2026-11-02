@@ -57,5 +57,16 @@ export default async function plugin(bb: BbPluginApi) {
     };
   });
 
+  // Sessions started before 0.1.3 were visible in the BB project tree; hide them.
+  void (async () => {
+    for (const threadId of store.sessionThreadIds()) {
+      try {
+        await bb.sdk.threads.update({ threadId, visibility: "hidden" });
+      } catch (error) {
+        bb.log.warn(`Could not hide BA session ${threadId}: ${String(error)}`);
+      }
+    }
+  })();
+
   bb.log.info("BA One Pass loaded");
 }

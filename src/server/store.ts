@@ -511,6 +511,11 @@ export class Store {
     return rows.map(toSession);
   }
 
+  /** Thread IDs of every BA session, in all projects. */
+  sessionThreadIds(): string[] {
+    return (this.db.prepare("SELECT thread_id FROM sessions").all() as Array<{ thread_id: string }>).map((row) => row.thread_id);
+  }
+
   closeSession(threadId: string, summary: string | null): Session {
     const session = this.getSession(threadId);
     if (session === null) throw new StoreError("This thread is not a BA session.");

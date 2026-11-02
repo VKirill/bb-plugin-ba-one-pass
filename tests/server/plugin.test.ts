@@ -53,6 +53,7 @@ describe("plugin", () => {
     const spawn = harness.inspection.sdk.callsTo("threads.spawn")[0] as unknown as { args: unknown[] };
     expect(JSON.stringify(spawn)).toContain("Выявление");
     expect(JSON.stringify(spawn)).toContain('"projectId":"proj_1"');
+    expect(JSON.stringify(spawn)).toContain('"visibility":"hidden"');
 
     // A BA session gets BA tools and the elicit skills; another thread gets nothing.
     const config = await harness.behavior.resolveAgentConfiguration(

@@ -176,9 +176,16 @@ const fieldClass =
 
 export function NativeSelect({ className, children, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <select className={cn(fieldClass, "h-9 py-0", className)} {...props}>
-      {children}
-    </select>
+    <div className={cn("relative flex w-full min-w-0", className)}>
+      <select className={cn(fieldClass, "h-9 cursor-pointer appearance-none py-0 pr-9")} {...props}>
+        {children}
+      </select>
+      <Icon
+        name="ChevronDown"
+        className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+        aria-hidden
+      />
+    </div>
   );
 }
 
