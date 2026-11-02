@@ -127,4 +127,24 @@ describe("plugin", () => {
     const decisions = await rpc("items_list", { projectId: project.id, types: ["decision"] });
     expect(decisions.items).toHaveLength(1);
   });
+
+  it("closes the previous question card when a new one opens", async () => {
+    const { bb, harness, rpc } = await setup();
+    const project = await rpc("project_create", { name: "Ask", bbProjectId: "proj_1" });
+    await rpc("session_start", { projectId: project.id, stage: "plan" });
+    const opened: AbortSignal[] = [];
+    (bb.ui as { requestInput: unknown }).requestInput = (_request: unknown, options: { signal: AbortSignal }) =>
+      new Promise((resolve, reject) => {
+        opened.push(options.signal);
+        options.signal.addEventListener("abort", () => reject(new Error("aborted")));
+        if (opened.length === 2) resolve({ outcome: "submitted", value: { answers: [{ id: "q", answer: "Да", status: "confirmed" }] } });
+      });
+    const card = { title: "T", questions: [{ id: "q", question: "Верно?", why: "Проверка" }] };
+    const ctx = { threadId: "thr_1" };
+    const first = harness.behavior.callAgentTool("ba_ask", card, ctx);
+    await new Promise((r) => setTimeout(r, 0));
+    const second = await harness.behavior.callAgentTool("ba_ask", card, ctx);
+    expect(text(await first)).toMatch(/replaced/u);
+    expect(text(second)).toContain("→ Да");
+  });
 });

@@ -54,6 +54,8 @@ type ToolResult = string | { content: { type: "text"; text: string }[]; isError?
 const fail = (text: string): ToolResult => ({ content: [{ type: "text", text }], isError: true });
 
 export function registerTools(bb: BbPluginApi, store: Store, changed: (projectId: string) => void): void {
+  /** The open ba_ask card of each session, so a newer card can close it. */
+  const openAsks = new Map<string, AbortController>();
   /** The store is authoritative. A thread spawned a moment ago may run its first tool
    * before session_start recorded it; then the spawn metadata registers it. */
   async function sessionOf(threadId: string): Promise<Session> {
@@ -62,7 +64,7 @@ export function registerTools(bb: BbPluginApi, store: Store, changed: (projectId
     const meta = sessionMetadataSchema.safeParse(await bb.sdk.threads.getPluginMetadata({ threadId }));
     if (!meta.success) throw new StoreError("This thread is not a BA One Pass session. Start one from the BA One Pass panel.");
     const project = store.getProject(meta.data.projectId);
-    return store.addSession({ threadId, projectId: project.id, stage: meta.data.stage, title: sessionTitle(project.name, meta.data.stage) });
+    return store.addSession({ threadId, projectId: project.id, stage: meta.data.stage, title: sessionTitle(project.name, meta.data.stage, project.language) });
   }
 
   /** Wraps execute: resolves the session, maps store errors to tool errors. */
@@ -335,30 +337,44 @@ export function registerTools(bb: BbPluginApi, store: Store, changed: (projectId
     { pending: "Asking the user", completed: "User answered" },
     askPayloadSchema,
     async (payload, session, signal) => {
-      const result = await bb.ui.requestInput(
-        {
-          threadId: session.threadId,
-          rendererId: ASK_RENDERER_ID,
-          title: payload.title,
-          payload,
-          timeoutMs: 7 * 24 * 60 * 60 * 1000,
-          presentation: { label: { pending: "Waiting for answers", completed: "Answered" }, icon: { glyph: "ba-one-pass/question" } },
-          describeSubmission(value) {
-            const parsed = askResponseSchema.safeParse(value);
-            if (!parsed.success) return {};
-            return {
-              title: payload.title,
-              detail: parsed.data.answers
-                .map((a) => {
-                  const q = payload.questions.find((x) => x.id === a.id);
-                  return `**${q?.question ?? a.id}**\n${a.status === "unknown" ? "_Не знаю / don't know_" : a.status === "skipped" ? "_—_" : a.answer}`;
-                })
-                .join("\n\n"),
-            };
+      // One open card per session: a new card closes the previous one, which
+      // otherwise stays pending for 7 days after the user answered in chat.
+      openAsks.get(session.threadId)?.abort();
+      const own = new AbortController();
+      openAsks.set(session.threadId, own);
+      let result;
+      try {
+        result = await bb.ui.requestInput(
+          {
+            threadId: session.threadId,
+            rendererId: ASK_RENDERER_ID,
+            title: payload.title,
+            payload,
+            timeoutMs: 7 * 24 * 60 * 60 * 1000,
+            presentation: { label: { pending: "Waiting for answers", completed: "Answered" }, icon: { glyph: "ba-one-pass/question" } },
+            describeSubmission(value) {
+              const parsed = askResponseSchema.safeParse(value);
+              if (!parsed.success) return {};
+              return {
+                title: payload.title,
+                detail: parsed.data.answers
+                  .map((a) => {
+                    const q = payload.questions.find((x) => x.id === a.id);
+                    return `**${q?.question ?? a.id}**\n${a.status === "unknown" ? "_Не знаю / don't know_" : a.status === "skipped" ? "_—_" : a.answer}`;
+                  })
+                  .join("\n\n"),
+              };
+            },
           },
-        },
-        { signal },
-      );
+          { signal: AbortSignal.any([signal, own.signal]) },
+        );
+      } catch (error) {
+        if (own.signal.aborted && !signal.aborted) return "This question card was replaced by a newer one; nothing to do.";
+        throw error;
+      } finally {
+        if (openAsks.get(session.threadId) === own) openAsks.delete(session.threadId);
+      }
+      if (result.outcome === "cancelled" && own.signal.aborted) return "This question card was replaced by a newer one; nothing to do.";
       if (result.outcome === "cancelled") return `The user closed the question card (${result.reason}). Continue in chat without repeating the same card.`;
       const parsed = askResponseSchema.safeParse(result.value);
       if (!parsed.success) return fail("The answer card returned an unexpected value.");
@@ -428,8 +444,19 @@ const STAGE_TITLES: Record<StageId, string> = {
   "one-pass": "One Pass",
 };
 
-export function sessionTitle(projectName: string, stage: StageId): string {
-  return `BA · ${projectName} · ${STAGE_TITLES[stage]}`;
+const STAGE_TITLES_RU: Record<StageId, string> = {
+  plan: "Рамка и план",
+  elicit: "Выявление",
+  strategy: "Стратегия",
+  requirements: "Требования",
+  lifecycle: "Жизненный цикл",
+  "one-pass": "One Pass",
+};
+
+/** Thread title in the project's language (Russian for ru*, English otherwise). */
+export function sessionTitle(projectName: string, stage: StageId, language = "en"): string {
+  const titles = language.toLowerCase().startsWith("ru") ? STAGE_TITLES_RU : STAGE_TITLES;
+  return `BA · ${projectName} · ${titles[stage]}`;
 }
 
 /** Lines the configure callback adds for every BA session. */

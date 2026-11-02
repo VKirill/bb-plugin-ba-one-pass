@@ -123,7 +123,7 @@ export function registerRpc(bb: BbPluginApi, store: Store, changed: (projectId: 
 
     session_start: async ({ projectId, stage, goal }) => {
       const project = store.getProject(projectId);
-      const title = sessionTitle(project.name, stage);
+      const title = sessionTitle(project.name, stage, project.language);
       const thread = await bb.sdk.threads.spawn({
         projectId: project.bbProjectId,
         environment: { type: "project-default" },
