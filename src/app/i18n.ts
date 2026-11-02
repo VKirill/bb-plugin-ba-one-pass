@@ -496,9 +496,30 @@ const ru: Record<MessageKey, string> = {
 export const DICTIONARIES = { en, ru } as const;
 export type Locale = keyof typeof DICTIONARIES;
 
+/** The Russifier plugin translates BB's English UI in place and leaves <html lang> as
+ * "en"; its work shows on BB's own chrome as Cyrillic accessible names. */
+function russifierActive(): boolean {
+  try {
+    if (globalThis.localStorage?.getItem("bb-plugin-ru:enabled") === "off") return false;
+  } catch {
+    // storage unavailable
+  }
+  const labels = document.querySelectorAll('[data-sidebar="sidebar"] button[aria-label], header button[aria-label]');
+  for (const button of Array.from(labels).slice(0, 12)) {
+    if (/[А-Яа-яЁё]/u.test(button.getAttribute("aria-label") ?? "")) return true;
+  }
+  return false;
+}
+
+/** BB's interface language: <html lang>, then the Pokecut theme's resolved
+ * `data-pk-lang` (it honours the user's override), then the Russifier. */
 export function currentLocale(): Locale {
-  const lang = typeof document === "undefined" ? "" : document.documentElement.lang;
-  return lang.toLowerCase().startsWith("ru") ? "ru" : "en";
+  if (typeof document === "undefined") return "en";
+  const root = document.documentElement;
+  if (root.lang.toLowerCase().startsWith("ru")) return "ru";
+  const pokecut = root.getAttribute("data-pk-lang");
+  if (pokecut === "ru" || pokecut === "en") return pokecut;
+  return russifierActive() ? "ru" : "en";
 }
 
 function format(template: string, vars?: Record<string, string | number>): string {
@@ -511,8 +532,15 @@ function format(template: string, vars?: Record<string, string | number>): strin
 function subscribeLang(onChange: () => void): () => void {
   if (typeof MutationObserver === "undefined" || typeof document === "undefined") return () => {};
   const observer = new MutationObserver(onChange);
-  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["lang"] });
-  return () => observer.disconnect();
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["lang", "data-pk-lang"] });
+  // The Russifier translates the sidebar after load; watch its labels for a while.
+  const sidebar = document.querySelector('[data-sidebar="sidebar"]');
+  if (sidebar !== null) observer.observe(sidebar, { subtree: true, attributes: true, attributeFilter: ["aria-label"] });
+  const timers = [500, 2000, 5000].map((ms) => setTimeout(onChange, ms));
+  return () => {
+    observer.disconnect();
+    for (const timer of timers) clearTimeout(timer);
+  };
 }
 
 /** Re-render when BB switches `<html lang>` (it can change after the bundle loads). Call it in
