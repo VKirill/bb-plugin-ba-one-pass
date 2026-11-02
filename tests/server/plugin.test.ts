@@ -147,4 +147,22 @@ describe("plugin", () => {
     expect(text(await first)).toMatch(/replaced/u);
     expect(text(second)).toContain("→ Да");
   });
+
+  it("gives agents flat, typed schemas for ba_calc and ba_trace", async () => {
+    const { harness, rpc } = await setup();
+    const project = await rpc("project_create", { name: "Calc", bbProjectId: "proj_1" });
+    await rpc("session_start", { projectId: project.id, stage: "strategy" });
+    const ctx = { threadId: "thr_1" };
+    await harness.behavior.callAgentTool(
+      "ba_record",
+      { items: [{ type: "risk", title: "Риск", attrs: { probability: 4, impact: 3 } }] },
+      ctx,
+    );
+    const matrix = text(await harness.behavior.callAgentTool("ba_calc", { method: "risk_matrix", max_acceptable_score: 12 }, ctx));
+    expect(matrix).toContain("score ≥ 12");
+    const missing = await harness.behavior.callAgentTool("ba_calc", { method: "change_score" }, ctx);
+    expect(text(missing)).toMatch(/change_score/u);
+    expect(text(await harness.behavior.callAgentTool("ba_trace", { mode: "impact" }, ctx))).toMatch(/needs id/u);
+    expect(text(await harness.behavior.callAgentTool("ba_trace", { mode: "orphans" }, ctx)).length).toBeGreaterThan(0);
+  });
 });

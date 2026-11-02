@@ -107,6 +107,25 @@ export const calcInputSchema = z.discriminatedUnion("method", [
 ]);
 export type CalcInput = z.infer<typeof calcInputSchema>;
 
+const { method: _p, ...prioritizeFields } = prioritizeSchema.shape;
+const { method: _r, ...riskFields } = riskMatrixSchema.shape;
+const { method: _c, ...optionFields } = compareOptionsSchema.shape;
+const { method: _s, ...changeFields } = changeScoreSchema.shape;
+
+/**
+ * The schema the agent sees: one flat object with typed fields. A top-level
+ * union becomes `anyOf`, which agent clients flatten into untyped input, so
+ * the model sent numbers and arrays as strings. The tool checks the input
+ * against calcInputSchema (the per-method union) itself.
+ */
+export const calcToolSchema = z.object({
+  method: z.enum(["prioritize", "risk_matrix", "compare_options", "change_score", "gap_summary"]),
+  ...z.object(prioritizeFields).partial().shape,
+  ...z.object(riskFields).partial().shape,
+  ...z.object(optionFields).partial().shape,
+  ...z.object(changeFields).partial().shape,
+});
+
 export interface CalcResult {
   markdown: string;
   data: unknown;

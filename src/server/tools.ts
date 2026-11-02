@@ -19,6 +19,7 @@ import {
 } from "../shared/model";
 import {
   calcInputSchema,
+  calcToolSchema,
   checkQuality,
   evaluateGate,
   lintText,
@@ -205,16 +206,19 @@ export function registerTools(bb: BbPluginApi, store: Store, changed: (projectId
     "ba_trace",
     "Traceability: impact of an item (mode impact, id), coverage gaps (coverage), a matrix (matrix, from/to types) or unlinked items (orphans).",
     { pending: "Tracing requirements", completed: "Traced requirements" },
-    z.discriminatedUnion("mode", [
-      z.object({ mode: z.literal("impact"), id: z.string(), depth: z.number().int().min(1).max(6).optional() }),
-      z.object({ mode: z.literal("coverage") }),
-      z.object({ mode: z.literal("matrix"), from: z.array(itemTypeSchema).optional(), to: z.array(itemTypeSchema).optional() }),
-      z.object({ mode: z.literal("orphans") }),
-    ]),
+    // A flat object, not a union by mode: agent clients flatten a top-level anyOf into untyped input.
+    z.object({
+      mode: z.enum(["impact", "coverage", "matrix", "orphans"]),
+      id: z.string().optional().describe("impact: the item id"),
+      depth: z.number().int().min(1).max(6).optional().describe("impact: link depth, default 3"),
+      from: z.array(itemTypeSchema).optional().describe("matrix: row item types"),
+      to: z.array(itemTypeSchema).optional().describe("matrix: column item types"),
+    }),
     (args, session) => {
       const s = store.snapshot(session.projectId);
       switch (args.mode) {
         case "impact":
+          if (args.id === undefined) return fail("ba_trace impact needs id.");
           return clip(traceImpact(s, args.id, args.depth ?? 3).markdown);
         case "coverage":
           return clip(traceCoverage(s).markdown);
@@ -297,8 +301,11 @@ export function registerTools(bb: BbPluginApi, store: Store, changed: (projectId
     "ba_calc",
     "Deterministic BA calculations: prioritize (MoSCoW/WSJF/impact_effort/time_boxing), risk_matrix, compare_options, change_score, gap_summary. Parameters per method with examples: the ba-core skill, references/calc.md.",
     { pending: "Calculating", completed: "Calculated" },
-    calcInputSchema,
-    (input, session) => {
+    calcToolSchema,
+    (raw, session) => {
+      const checked = calcInputSchema.safeParse(raw);
+      if (!checked.success) return fail(`ba_calc ${raw.method}: ${z.prettifyError(checked.error)}`);
+      const input = checked.data;
       const s = store.snapshot(session.projectId);
       const result = runCalc(s, input);
       if (result.updates.length > 0) {
