@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { ITEM_TYPES, STAGE_IDS, type ItemType } from "../shared/model";
 import { useProject, useProjects } from "./data";
 import { parseRoute, type Route } from "./helpers";
-import { t } from "./i18n";
+import { t, useLocale } from "./i18n";
 import { useGo } from "./nav";
 import { ErrorLine, Loading, stageLabel, typeLabel } from "./ui";
 
@@ -25,6 +25,7 @@ const MAIN_REGISTERS: readonly ItemType[] = [
 ];
 
 export function Sidebar({ subPath }: PluginNavPanelProps) {
+  useLocale();
   const route = parseRoute(subPath);
   return (
     <div className="flex min-h-0 flex-col gap-1 overflow-y-auto px-2 py-2 text-sm">

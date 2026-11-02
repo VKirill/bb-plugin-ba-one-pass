@@ -1,6 +1,6 @@
 {
   "name": "bb-plugin-ba-one-pass",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "engines": {
     "bb": ">=0.48",
@@ -10,7 +10,11 @@
     "name": "BA One Pass [Experimental]",
     "description": "A business analyst chat by stages: projects, sessions with stage skills, registers, traceability and documents (BRPV), based on BABOK v3.",
     "branding": {
-      "icon": "ClipboardList"
+      "icon": "./assets/icon.svg",
+      "experimental_icons": {
+        "clipboard": "./assets/icon.svg",
+        "question": "./assets/question.svg"
+      }
     },
     "server": "./server.ts",
     "app": "./app.tsx",

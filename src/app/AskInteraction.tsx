@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { buildAskAnswers, parseAskPayload, type AskChoice, type AskQuestion } from "./helpers";
 import { errorText } from "./data";
-import { t } from "./i18n";
+import { t, useLocale } from "./i18n";
 import { ErrorLine, Pill, TextArea } from "./ui";
 
 export function AskInteraction({ interaction, submit, cancel }: PluginPendingInteractionProps) {
+  useLocale();
   const payload = parseAskPayload(interaction.payload);
   const [choices, setChoices] = useState<Record<string, AskChoice>>({});
   const [pending, setPending] = useState(false);

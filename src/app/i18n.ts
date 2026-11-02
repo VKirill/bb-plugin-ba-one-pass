@@ -2,6 +2,8 @@
 // anything else → English. Russian must define every English key (type error
 // otherwise); a missing key is never silently shown in English.
 
+import { useSyncExternalStore } from "react";
+
 const en = {
   appTitle: "BA One Pass",
   loading: "Loading…",
@@ -504,6 +506,19 @@ function format(template: string, vars?: Record<string, string | number>): strin
   return template.replace(/\{(\w+)\}/gu, (match, name: string) =>
     name in vars ? String(vars[name]) : match,
   );
+}
+
+function subscribeLang(onChange: () => void): () => void {
+  if (typeof MutationObserver === "undefined" || typeof document === "undefined") return () => {};
+  const observer = new MutationObserver(onChange);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["lang"] });
+  return () => observer.disconnect();
+}
+
+/** Re-render when BB switches `<html lang>` (it can change after the bundle loads). Call it in
+ * every root component; children read the locale through t() on that render. */
+export function useLocale(): Locale {
+  return useSyncExternalStore(subscribeLang, currentLocale, () => "en" as Locale);
 }
 
 /** Translate a known key. */

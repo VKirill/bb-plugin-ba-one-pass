@@ -7,7 +7,7 @@ import "./app.css";
 import { definePluginApp, type PluginNavPanelProps } from "@get-bb/plugin-sdk/app";
 import { AskInteraction } from "./src/app/AskInteraction";
 import { ASK_RENDERER, PANEL_PATH, parseRoute } from "./src/app/helpers";
-import { t } from "./src/app/i18n";
+import { t, useLocale } from "./src/app/i18n";
 import { DocumentPage } from "./src/app/pages/DocumentPage";
 import { OverviewPage } from "./src/app/pages/OverviewPage";
 import { ProjectsPage } from "./src/app/pages/ProjectsPage";
@@ -26,6 +26,7 @@ function PageFrame({ children }: { children: React.ReactNode }) {
 }
 
 function BaPanel({ subPath }: PluginNavPanelProps) {
+  useLocale();
   const route = parseRoute(subPath);
   switch (route.kind) {
     case "projects":
@@ -67,7 +68,7 @@ export default definePluginApp((app) => {
   app.slots.navPanel({
     id: PANEL_PATH,
     title: t("appTitle"),
-    icon: "ClipboardList",
+    icon: "ba-one-pass/clipboard",
     path: PANEL_PATH,
     component: BaPanel,
     experimental_sidebar: Sidebar,

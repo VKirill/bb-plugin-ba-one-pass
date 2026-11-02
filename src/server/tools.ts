@@ -76,7 +76,7 @@ export function registerTools(bb: BbPluginApi, store: Store, changed: (projectId
     bb.agents.registerTool({
       name,
       description,
-      presentation: { label: labels, icon: { glyph: "ClipboardList" } },
+      presentation: { label: labels, icon: { glyph: "ba-one-pass/clipboard" } },
       parameters,
       async execute(args: z.infer<S>, ctx: { threadId: string; signal: AbortSignal }) {
         try {
@@ -342,7 +342,7 @@ export function registerTools(bb: BbPluginApi, store: Store, changed: (projectId
           title: payload.title,
           payload,
           timeoutMs: 7 * 24 * 60 * 60 * 1000,
-          presentation: { label: { pending: "Waiting for answers", completed: "Answered" }, icon: { glyph: "MessageCircleQuestion" } },
+          presentation: { label: { pending: "Waiting for answers", completed: "Answered" }, icon: { glyph: "ba-one-pass/question" } },
           describeSubmission(value) {
             const parsed = askResponseSchema.safeParse(value);
             if (!parsed.success) return {};
