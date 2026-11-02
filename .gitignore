@@ -1,0 +1,6 @@
+dist/
+node_modules/
+.bb/
+.gitnexus/
+AGENTS.md
+.DS_Store

@@ -1,0 +1,205 @@
+/*
+ * BA One Pass in the Pokecut look, the same visual language as the Pokecut BB
+ * theme. Kit: docs/DESIGN.md of BB-сервис (pokecut-plugin.css), prefix bo-.
+ * The --bo-* tokens read the theme's --pk-* tokens and fall back to BB's own
+ * palette, so the screens stay tidy under any BB theme, light or dark.
+ */
+[data-bb-plugin="ba-one-pass"],
+[data-bb-plugin-root]:not([data-bb-plugin]) {
+  --bo-well: var(--pk-well, color-mix(in oklab, var(--muted) 45%, var(--card)));
+  --bo-card: var(--pk-card, var(--card));
+  --bo-outline: var(--pk-outline, var(--input));
+  --bo-hairline: var(--pk-hairline, var(--border));
+  --bo-drop: var(--pk-drop, 0 1px 2px rgb(0 0 0 / 0.06));
+  --bo-card-drop: var(--pk-card-drop, none);
+  --bo-raise: 0 1px 3px 0 rgb(0 0 0 / 0.12);
+  --bo-accent: var(--pk-accent-gradient, linear-gradient(var(--primary), var(--primary)));
+  --bo-accent-edge: var(--pk-accent-edge, none);
+  --bo-success: var(--success, #3fae4a);
+  --bo-success-text: var(--diff-added, #2f8a45);
+  --bo-info: var(--timeline-accent, #3e7be8);
+  --bo-warning: var(--warning, #e8a33d);
+  --bo-warning-text: var(--warning-text, #b4540f);
+  --bo-danger-text: var(--destructive-text, var(--destructive));
+}
+
+@layer components {
+  /* Nested card: a gray well frames a header line and the white body card. */
+  .bo-panel {
+    min-width: 0;
+    max-width: 100%;
+    padding: 4px;
+    border: 1px solid var(--bo-hairline);
+    border-radius: 16px;
+    background-color: var(--bo-well);
+    box-shadow: var(--bo-card-drop);
+  }
+
+  .bo-panel-head {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+  }
+
+  .bo-panel-body {
+    min-width: 0;
+    max-width: 100%;
+    padding: 12px;
+    border: 1px solid var(--bo-hairline);
+    border-radius: 12px;
+    background-color: var(--bo-card);
+    box-shadow: var(--bo-drop);
+  }
+
+  /* A single white card, for blocks that need no header well. */
+  .bo-card {
+    min-width: 0;
+    border: 1px solid var(--bo-hairline);
+    border-radius: 14px;
+    background-color: var(--bo-card);
+    box-shadow: var(--bo-drop);
+  }
+
+  /* Page header strip: a quiet well holding the title and page actions. */
+  .bo-strip {
+    min-width: 0;
+    padding: 10px 14px;
+    border: 1px solid var(--bo-hairline);
+    border-radius: 14px;
+    background-color: var(--bo-well);
+  }
+
+  /* Raised white surface: secondary buttons, inputs on a well, chips. */
+  .bo-raised {
+    border: 1px solid var(--bo-outline);
+    background-color: var(--bo-card);
+    box-shadow: var(--bo-drop);
+  }
+
+  /* The one primary action of a screen or dialog. */
+  .bo-accent {
+    border-color: transparent;
+    background-color: var(--primary);
+    background-image: var(--bo-accent);
+    box-shadow: var(--bo-accent-edge);
+    color: #ffffff;
+  }
+
+  .bo-accent:hover:not(:disabled) {
+    filter: brightness(1.05) saturate(1.05);
+  }
+
+  /* Segmented control: a gray track, the chosen option raised in white. */
+  .bo-seg {
+    display: inline-flex;
+    max-width: 100%;
+    align-items: center;
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid var(--bo-hairline);
+    border-radius: 9px;
+    background-color: var(--bo-well);
+  }
+
+  .bo-seg-item {
+    border-radius: 6px;
+    color: var(--muted-foreground);
+    font-weight: 500;
+  }
+
+  .bo-seg-item:hover {
+    color: var(--foreground);
+  }
+
+  .bo-seg-item:is([data-state="active"], [aria-pressed="true"]) {
+    background-color: var(--bo-card);
+    box-shadow: var(--bo-raise);
+    color: var(--foreground);
+    font-weight: 600;
+  }
+
+  /* Navigation rows: quiet until chosen; the chosen one is a raised pill. */
+  .bo-nav-item {
+    border-radius: 8px;
+    color: var(--muted-foreground);
+  }
+
+  .bo-nav-item:hover {
+    color: var(--foreground);
+  }
+
+  .bo-nav-item:is([aria-selected="true"], [aria-current="page"]) {
+    background-color: var(--bo-card);
+    box-shadow: inset 0 0 0 1px var(--bo-outline), var(--bo-drop);
+    color: var(--foreground);
+  }
+
+  /* Small square tile for an icon or status mark next to a title. */
+  .bo-tile {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--bo-outline);
+    border-radius: 9px;
+    background-color: var(--bo-card);
+    box-shadow: var(--bo-drop);
+  }
+
+  /* Apply to @bb/switch. */
+  .bo-switch[data-state="checked"] {
+    background-color: var(--primary);
+    background-image: var(--bo-accent);
+  }
+
+  .bo-switch[data-state="unchecked"] {
+    background-color: var(--bo-outline);
+  }
+
+  .bo-switch > span {
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
+  }
+
+  /* «?» help mark: a 14px circle raised to the top of the title line. */
+  .bo-help {
+    display: inline-flex;
+    width: 14px;
+    height: 14px;
+    margin-left: 4px;
+    align-items: center;
+    justify-content: center;
+    vertical-align: top;
+    border: 1px solid var(--bo-outline);
+    border-radius: 9999px;
+    background-color: var(--bo-card);
+    color: var(--muted-foreground);
+    font-size: 9px;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  /* Status pills: fully rounded, soft tint, coloured text. */
+  .bo-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .bo-pill-success { background-color: color-mix(in oklab, var(--bo-success) 14%, transparent); color: var(--bo-success-text); }
+  .bo-pill-info { background-color: color-mix(in oklab, var(--bo-info) 13%, transparent); color: var(--bo-info); }
+  .bo-pill-warning { background-color: color-mix(in oklab, var(--bo-warning) 16%, transparent); color: var(--bo-warning-text); }
+  .bo-pill-danger { background-color: color-mix(in oklab, var(--destructive) 12%, transparent); color: var(--bo-danger-text); }
+  .bo-pill-neutral { background-color: var(--bo-card); box-shadow: inset 0 0 0 1px var(--bo-outline); color: var(--foreground); }
+  .bo-pill-muted { background-color: color-mix(in oklab, var(--foreground) 7%, transparent); color: var(--foreground); }
+
+  .bo-text-success { color: var(--bo-success-text); }
+  .bo-text-warning { color: var(--bo-warning-text); }
+  .bo-text-danger { color: var(--bo-danger-text); }
+}
